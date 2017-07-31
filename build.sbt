@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
   "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % "3.0.1",
   "org.scalikejdbc" %% "scalikejdbc-play-initializer" % "2.6.0",
   "org.scalikejdbc" %% "scalikejdbc-test" % "3.0.1" % "test",
+  "org.mockito" % "mockito-core" % "2.7.22" % Test,
   "com.h2database" % "h2" % "1.4.196" % Test,
   "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.0" % Test)
 
