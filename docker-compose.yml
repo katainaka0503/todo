@@ -1,0 +1,32 @@
+version: '2'
+services:
+  todo-server:
+    build: ./target/docker/stage/
+    ports:
+      - "80:9000"
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: password
+    entrypoint:
+      - conf/wait-for-postgres.sh
+      - postgres
+      - bin/todo
+
+  postgres:
+    image:
+      "postgres:10"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: todo
+    volumes_from:
+      - postgres-data
+
+  postgres-data:
+    image: busybox
+    volumes:
+        - /var/lib/postgresql/data
+
