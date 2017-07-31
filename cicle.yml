@@ -1,0 +1,11 @@
+dependencies:
+  override:
+    - sbt update
+
+compile:
+  override:
+    - sbt compile
+
+test:
+  override:
+    - sbt test
