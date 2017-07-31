@@ -21,6 +21,12 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
   override val autoSession = AutoSession
 
+  def findAll()(implicit session: DBSession = autoSession): Seq[Todo] = {
+    withSQL {
+      select.from(Todo as t)
+    }.map(Todo(t.resultName)).list.apply()
+  }
+
   def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession): Seq[Todo] = {
     val like = s"""%$keyword%"""   //Todo: Escape % and _ !!!
     withSQL{
