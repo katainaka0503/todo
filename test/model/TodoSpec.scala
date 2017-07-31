@@ -24,7 +24,11 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback {
   }
 
   it should "search with Keyword" in { implicit session =>
-    Todo.findAllByKeyword("Keyword").length should be(2)
+    val keyword = "Keyword"
+    val all = Todo.findAll()
+    val expected = all.filter(todo => todo.title.contains(keyword) || todo.description.contains(keyword))
+
+    Todo.findAllByKeyword("Keyword") should be(expected)
   }
 
   it should "list all todos" in { implicit session =>
