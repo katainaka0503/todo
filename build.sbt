@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+
 name := """todo"""
 organization := "com.example"
 
@@ -9,3 +11,13 @@ scalaVersion := "2.12.2"
 
 libraryDependencies += guice
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.0" % Test
+
+dockerCommands := Seq(
+  Cmd("FROM", "openjdk:latest"),
+  Cmd("RUN", "apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*"),
+  Cmd("WORKDIR", "/opt/docker"), Cmd("ADD", "opt", "/opt"),
+  Cmd("RUN", "chown -R daemon:daemon ."),
+  Cmd("USER", "daemon"),
+  ExecCmd("ENTRYPOINT", "bin/quiz-server"),
+  ExecCmd("CMD")
+)
