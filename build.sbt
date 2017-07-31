@@ -9,8 +9,11 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 scalaVersion := "2.12.2"
 
-libraryDependencies += guice
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.0" % Test
+libraryDependencies ++= Seq(
+  guice,
+  "org.flywaydb" %% "flyway-play" % "4.0.0",
+  "org.postgresql" % "postgresql" % "42.1.1",
+  "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.0" % Test)
 
 dockerCommands := Seq(
   Cmd("FROM", "openjdk:latest"),
