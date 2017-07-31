@@ -7,7 +7,7 @@ import scalikejdbc.scalatest.AutoRollback
 
 class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback {
 
-  override def db = NamedDB('h2).toDB
+  override def db = NamedDB('default).toDB
 
   behavior of "Todo"
 
