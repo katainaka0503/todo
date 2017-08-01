@@ -99,7 +99,7 @@ trait TodoDao {
 
   def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo
 
-  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]
 
   def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit]
 }
