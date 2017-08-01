@@ -90,4 +90,7 @@ class TodoDaoImpl extends TodoDao {
   override def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = Todo.create(title, description)
 
   override def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
+
+  override def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit] = Todo.delete(id)
+
 }

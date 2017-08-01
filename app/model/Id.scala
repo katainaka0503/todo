@@ -1,3 +1,3 @@
 package model
 
-case class Id[A](value: Long) extends AnyVal
+case class Id[A](value: Long)
