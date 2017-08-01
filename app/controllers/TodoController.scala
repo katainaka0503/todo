@@ -53,6 +53,20 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     }
   }
 
+  def updateTodo(id: Long) = Action(parse.json) { implicit request =>
+
+    val parsed = request.body.validate[CreateDto]
+
+    parsed match {
+      case JsSuccess(CreateDto(title, description), _) => {
+        DB.localTx { implicit session =>
+          Ok(Json.toJson(todoDao.save(Todo(Id(id), title, description))))
+        }
+      }
+      case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
+    }
+  }
+
 }
 
 case class CreateDto(title: String, description: String)
@@ -64,4 +78,6 @@ trait TodoDao {
   def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession): Seq[Todo]
 
   def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo
+
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Todo = Todo.save(todo)
 }

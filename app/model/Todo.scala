@@ -70,4 +70,6 @@ class TodoDaoImpl extends TodoDao {
   override def findAllByKeyword(keyword: String)(implicit session: DBSession): Seq[Todo] = Todo.findAllByKeyword(keyword)
 
   override def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = Todo.create(title, description)
+
+  override def save(todo: Todo)(implicit session: DBSession = autoSession): Todo = Todo.save(todo)
 }
