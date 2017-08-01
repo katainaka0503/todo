@@ -1,21 +1,22 @@
 package model
 
-import org.scalatest.{BeforeAndAfterAll, Matchers, fixture}
+import org.scalatest.{Matchers, fixture}
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import play.api.Application
+import play.api.inject.guice.GuiceApplicationBuilder
 import scalikejdbc.config.DBs
-import scalikejdbc.{DB, DBSession, NamedDB, SQL}
 import scalikejdbc.scalatest.AutoRollback
+import scalikejdbc.{DBSession, NamedDB, SQL}
 
-class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback {
+class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with GuiceOneAppPerSuite {
+
+  override def fakeApplication(): Application = new GuiceApplicationBuilder().build()
 
   override def db = NamedDB('default).toDB
 
   behavior of "Todo"
 
   DBs.setupAll()
-
-  db autoCommit { implicit session =>
-    SQL("create table todos( id serial primary key, title varchar(30) not null, description text not null)").execute.apply()
-  }
 
   override def fixture(implicit session: DBSession) {
     SQL("insert into todos(title, description) values (?, ?)").bind("KeywordContains", "description").update.apply()
