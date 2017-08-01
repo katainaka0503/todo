@@ -1,10 +1,14 @@
 package model
 
+import javax.inject.Singleton
+
+import controllers.TodoDao
 import scalikejdbc._
 
 case class Todo(id: Id[Todo], title: String, description: String)
 
-object Todo extends SQLSyntaxSupport[Todo]{
+@Singleton
+object Todo extends SQLSyntaxSupport[Todo] with TodoDao{
   override def schemaName: Option[String] = Some("public")
 
   override val tableName = "todos"
