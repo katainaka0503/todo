@@ -1,2 +1,4 @@
 GET     /todo/list          controllers.TodoController.findAllByKeyword(keyword)
 GET     /todo/list-all      controllers.TodoController.findAll()
+
+POST    /todo/              controllers.TodoController.newTodo()

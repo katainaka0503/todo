@@ -4,6 +4,7 @@ import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import scalikejdbc.config.DBs
 
@@ -22,6 +23,12 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
       val response = Await.result(wsClient.url(todoListURL).get(), Duration.Inf)
       response.status mustBe 200
     }
-  }
 
+    "create new Todo" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val newTodoURL = s"http://localhost:$port/todo/"
+      val response = Await.result(wsClient.url(newTodoURL).post(Json.obj("title" -> "newOne", "description" -> "This is new one.")), Duration.Inf)
+      response.status mustBe 200
+    }
+  }
 }
