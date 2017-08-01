@@ -59,4 +59,17 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
       case _ => fail
     }
   }
+
+  it should "delete todo" in { implicit session =>
+    val created = Todo.create("newOne", "This is new Todo item.")
+
+    Todo.delete(created.id) should be (Success(()))
+  }
+
+  it should "return error when delete todo not exists" in { implicit session =>
+    Todo.delete(Id(-1)) match {
+      case Failure(e: NoSuchElementException) => succeed
+      case _ => fail
+    }
+  }
 }

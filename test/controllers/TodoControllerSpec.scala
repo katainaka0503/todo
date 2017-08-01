@@ -121,4 +121,23 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
     contentAsJson(result) should be(Json.obj("message" -> "Not found"))
   }
 
+  it should "delete todo" in {
+    val id = Id[Todo](1)
+    when(mockDao.delete(ArgumentMatchers.eq(id))(any())).thenReturn(Success(()))
+
+    val result: Future[Result] = controller.deleteTodo(id.value).apply(FakeRequest())
+
+    status(result) should be (200)
+  }
+
+  it should "return 404 when todo to delete not exists" in {
+    val id = Id[Todo](-1)
+    when(mockDao.delete(ArgumentMatchers.eq(id))(any())).thenReturn(Failure(new NoSuchElementException()))
+
+    val result: Future[Result] = controller.deleteTodo(id.value).apply(FakeRequest())
+
+    status(result) should be (404)
+    contentAsJson(result) should be(Json.obj("message" -> "Not found"))
+  }
+
 }

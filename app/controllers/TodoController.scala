@@ -62,6 +62,15 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     }
   }
 
+  def deleteTodo(id: Long) = Action { implicit request =>
+    DB.localTx{ implicit session =>
+      todoDao.delete(Id(id)) match {
+        case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+        case Success(()) => Ok
+      }
+    }
+  }
+
 }
 
 object TodoController {
@@ -89,4 +98,6 @@ trait TodoDao {
   def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo
 
   def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
+
+  def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit]
 }

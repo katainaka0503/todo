@@ -4,3 +4,5 @@ GET     /todo/list-all      controllers.TodoController.findAll()
 POST    /todo/              controllers.TodoController.newTodo()
 
 PUT     /todo/:id           controllers.TodoController.updateTodo(id: Long)
+
+DELETE  /todo/:id           controllers.TodoController.deleteTodo(id: Long)

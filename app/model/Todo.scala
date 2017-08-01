@@ -67,6 +67,18 @@ object Todo extends SQLSyntaxSupport[Todo]{
       Success(todo)
     }
   }
+
+  def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit] = {
+    val num = withSQL {
+      deleteFrom(Todo).where.eq(column.id, id.value)
+    }.update.apply()
+
+    if(num == 0){
+      Failure(new NoSuchElementException())
+    } else {
+      Success(())
+    }
+  }
 }
 
 @Singleton
@@ -78,4 +90,7 @@ class TodoDaoImpl extends TodoDao {
   override def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = Todo.create(title, description)
 
   override def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
+
+  override def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit] = Todo.delete(id)
+
 }
