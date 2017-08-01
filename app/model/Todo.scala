@@ -7,8 +7,7 @@ import scalikejdbc._
 
 case class Todo(id: Id[Todo], title: String, description: String)
 
-@Singleton
-object Todo extends SQLSyntaxSupport[Todo] with TodoDao{
+object Todo extends SQLSyntaxSupport[Todo]{
   override def schemaName: Option[String] = Some("public")
 
   override val tableName = "todos"
@@ -39,4 +38,11 @@ object Todo extends SQLSyntaxSupport[Todo] with TodoDao{
         .or.like(t.description, like)
     }.map(Todo(t.resultName)).list.apply()
   }
+}
+
+@Singleton
+class TodoDaoImpl extends TodoDao {
+  override def findAll()(implicit session: DBSession): Seq[Todo] = Todo.findAll()
+
+  override def findAllByKeyword(keyword: String)(implicit session: DBSession): Seq[Todo] = Todo.findAllByKeyword(keyword)
 }

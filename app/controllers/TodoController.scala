@@ -2,8 +2,9 @@ package controllers
 
 import javax.inject._
 
+import com.google.inject.ImplementedBy
 import model.Todo.autoSession
-import model.{Id, Todo}
+import model.{Id, Todo, TodoDaoImpl}
 import play.api.libs.json.Json
 import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
@@ -30,7 +31,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
   }
 }
 
-
+@ImplementedBy(classOf[TodoDaoImpl])
 trait TodoDao {
   def findAll()(implicit session: DBSession = autoSession): Seq[Todo]
 
