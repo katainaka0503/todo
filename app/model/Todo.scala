@@ -50,6 +50,17 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
     Todo(Id(id.toLong), title, description)
   }
+
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Todo = {
+    withSQL {
+      update(Todo).set(
+        column.title -> todo.title,
+        column.description -> todo.description
+      ).where.eq(column.id, todo.id.value)
+    }.update.apply()
+
+    todo
+  }
 }
 
 @Singleton

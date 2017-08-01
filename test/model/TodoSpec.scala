@@ -41,4 +41,13 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
 
     Todo.findAll().length should be(4)
   }
+
+  it should "update todo" in { implicit session =>
+    val created = Todo.create("newOne", "This is new Todo item.")
+    val modified = created.copy(title = "ModifiedOne")
+
+    Todo.save(modified)
+
+    Todo.findAllByKeyword("Modified").length should be (1)
+  }
 }
