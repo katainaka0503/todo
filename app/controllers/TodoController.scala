@@ -11,6 +11,8 @@ import play.api.libs.functional.syntax._
 import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
 
+import scala.util.{Failure, Success, Try}
+
 @Singleton
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
   implicit val todoFormat : Format[Todo] = (
@@ -60,7 +62,10 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     parsed match {
       case JsSuccess(CreateDto(title, description), _) => {
         DB.localTx { implicit session =>
-          Ok(Json.toJson(todoDao.save(Todo(Id(id), title, description))))
+          todoDao.save(Todo(Id(id), title, description)) match {
+            case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+            case Success(todo) => Ok(Json.toJson(todo))
+          }
         }
       }
       case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
@@ -79,5 +84,5 @@ trait TodoDao {
 
   def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo
 
-  def save(todo: Todo)(implicit session: DBSession = autoSession): Todo = Todo.save(todo)
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
 }

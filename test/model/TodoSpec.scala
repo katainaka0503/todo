@@ -8,6 +8,8 @@ import scalikejdbc.config.DBs
 import scalikejdbc.scalatest.AutoRollback
 import scalikejdbc.{DBSession, NamedDB, SQL}
 
+import scala.util.{Failure, Success}
+
 class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with GuiceOneAppPerSuite {
 
   override def fakeApplication(): Application = new GuiceApplicationBuilder().build()
@@ -46,8 +48,15 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     val created = Todo.create("newOne", "This is new Todo item.")
     val modified = created.copy(title = "ModifiedOne")
 
-    Todo.save(modified)
+    Todo.save(modified) should be (Success(modified))
 
     Todo.findAllByKeyword("Modified").length should be (1)
+  }
+
+  it should "return error when update todo not exists" in { implicit session =>
+    Todo.save(Todo(Id(-1), "not Exist", "hoge")) match {
+      case Failure(e: NoSuchElementException) => succeed
+      case _ => fail
+    }
   }
 }

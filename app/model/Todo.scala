@@ -6,6 +6,8 @@ import controllers.TodoDao
 import model.Todo.autoSession
 import scalikejdbc._
 
+import scala.util.{Failure, Success, Try}
+
 case class Todo(id: Id[Todo], title: String, description: String)
 
 object Todo extends SQLSyntaxSupport[Todo]{
@@ -51,15 +53,19 @@ object Todo extends SQLSyntaxSupport[Todo]{
     Todo(Id(id.toLong), title, description)
   }
 
-  def save(todo: Todo)(implicit session: DBSession = autoSession): Todo = {
-    withSQL {
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo] = {
+    val num = withSQL {
       update(Todo).set(
         column.title -> todo.title,
         column.description -> todo.description
       ).where.eq(column.id, todo.id.value)
     }.update.apply()
 
-    todo
+    if(num == 0){
+      Failure(new NoSuchElementException())
+    } else {
+      Success(todo)
+    }
   }
 }
 
@@ -71,5 +77,5 @@ class TodoDaoImpl extends TodoDao {
 
   override def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = Todo.create(title, description)
 
-  override def save(todo: Todo)(implicit session: DBSession = autoSession): Todo = Todo.save(todo)
+  override def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
 }
