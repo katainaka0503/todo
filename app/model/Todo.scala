@@ -67,6 +67,18 @@ object Todo extends SQLSyntaxSupport[Todo]{
       Success(todo)
     }
   }
+
+  def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit] = {
+    val num = withSQL {
+      deleteFrom(Todo).where.eq(column.id, id.value)
+    }.update.apply()
+
+    if(num == 0){
+      Failure(new NoSuchElementException())
+    } else {
+      Success(())
+    }
+  }
 }
 
 @Singleton
