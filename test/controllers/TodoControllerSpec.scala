@@ -106,7 +106,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
     contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
 
-  it should "return 404 when todo not exists" in {
+  it should "return 404 when todo to update not exists" in {
     val modifing = Todo(Id(1), "modify", "This is Modifying.")
     when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Failure(new NoSuchElementException()))
 

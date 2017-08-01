@@ -20,7 +20,7 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
   DBs.setupAll()
 
   "TodoAPI" should {
-    "test server logic" in {
+    "list all Todo" in {
       val wsClient = app.injector.instanceOf[WSClient]
       val todoListURL = s"http://localhost:$port/todo/list-all"
       val response = Await.result(wsClient.url(todoListURL).get(), Duration.Inf)
