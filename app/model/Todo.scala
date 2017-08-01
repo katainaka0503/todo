@@ -38,6 +38,17 @@ object Todo extends SQLSyntaxSupport[Todo]{
         .or.like(t.description, like)
     }.map(Todo(t.resultName)).list.apply()
   }
+
+  def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = {
+    val id = withSQL {
+      insertInto(Todo).namedValues(
+        column.title -> title,
+        column.description ->  description
+      )
+    }.updateAndReturnGeneratedKey.apply()
+
+    Todo(Id(id.toLong), title, description)
+  }
 }
 
 @Singleton

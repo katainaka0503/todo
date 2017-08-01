@@ -19,9 +19,9 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
   DBs.setupAll()
 
   override def fixture(implicit session: DBSession) {
-    SQL("insert into todos(title, description) values (?, ?)").bind("KeywordContains", "description").update.apply()
-    SQL("insert into todos(title, description) values (?, ?)").bind("hogehoge", "containsKeyword").update.apply()
-    SQL("insert into todos(title, description) values (?, ?)").bind("donotContains", "test").update.apply()
+    Todo.create("KeywordContains", "description")
+    Todo.create("hogehoge", "containsKeyword")
+    Todo.create("donotContains", "test")
   }
 
   it should "search with Keyword" in { implicit session =>
@@ -34,5 +34,11 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
 
   it should "list all todos" in { implicit session =>
     Todo.findAll().length should be(3)
+  }
+
+  it should "create todo" in {implicit session =>
+    Todo.create("newOne", "This is new Todo item.")
+
+    Todo.findAll().length should be(4)
   }
 }
