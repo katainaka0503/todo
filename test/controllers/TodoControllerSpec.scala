@@ -24,7 +24,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   val mockDao: TodoDao = mock[TodoDao]
 
   val controller = new TodoController(mockDao, stubCC)
-  import controller.todoFormat
+  import TodoController.{createDtoFormmat, todoFormat}
 
   after{
     reset(mockDao)

@@ -15,17 +15,7 @@ import scala.util.{Failure, Success, Try}
 
 @Singleton
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
-  implicit val todoFormat : Format[Todo] = (
-    (JsPath \ "id").format[Long] and
-    (JsPath \ "title").format[String](maxLength[String](30)) and
-      (JsPath \ "description").format[String]
-  )((id, title, description) => Todo(Id(id),title, description), (t:Todo) => (t.id.value,t.title, t.description))
-
-  implicit val createDtoFormmat : Format[CreateDto] = (
-    (JsPath \ "title").format[String](maxLength[String](30)) and
-      (JsPath \ "description").format[String]
-  )(CreateDto.apply, unlift(CreateDto.unapply))
-
+  import TodoController.{todoFormat,createDtoFormmat}
 
   def findAll() = Action { implicit request =>
     val all = DB.readOnly { implicit session =>
@@ -72,6 +62,20 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     }
   }
 
+}
+
+object TodoController {
+
+  implicit val todoFormat : Format[Todo] = (
+    (JsPath \ "id").format[Long] and
+      (JsPath \ "title").format[String](maxLength[String](30)) and
+      (JsPath \ "description").format[String]
+    )((id, title, description) => Todo(Id(id),title, description), (t:Todo) => (t.id.value,t.title, t.description))
+
+  implicit val createDtoFormmat : Format[CreateDto] = (
+    (JsPath \ "title").format[String](maxLength[String](30)) and
+      (JsPath \ "description").format[String]
+    )(CreateDto.apply, unlift(CreateDto.unapply))
 }
 
 case class CreateDto(title: String, description: String)
