@@ -54,6 +54,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
         DB.localTx { implicit session =>
           todoDao.save(Todo(Id(id), title, description)) match {
             case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+            case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
             case Success(todo) => Ok(Json.toJson(todo))
           }
         }
@@ -66,6 +67,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     DB.localTx{ implicit session =>
       todoDao.delete(Id(id)) match {
         case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+        case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
         case Success(()) => Ok
       }
     }
