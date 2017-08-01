@@ -3,6 +3,7 @@ package model
 import javax.inject.Singleton
 
 import controllers.TodoDao
+import model.Todo.autoSession
 import scalikejdbc._
 
 case class Todo(id: Id[Todo], title: String, description: String)
@@ -56,4 +57,6 @@ class TodoDaoImpl extends TodoDao {
   override def findAll()(implicit session: DBSession): Seq[Todo] = Todo.findAll()
 
   override def findAllByKeyword(keyword: String)(implicit session: DBSession): Seq[Todo] = Todo.findAllByKeyword(keyword)
+
+  override def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = Todo.create(title, description)
 }

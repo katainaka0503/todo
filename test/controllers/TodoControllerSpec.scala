@@ -6,6 +6,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import play.api.libs.json.Json
 import play.api.mvc.{ControllerComponents, Result}
 import play.api.test.Helpers._
 import play.api.test._
@@ -56,5 +57,29 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     status(result) should be (200)
     contentAsJson(result).as[List[Todo]] should be(found)
+  }
+
+  it should "createTodo" in {
+    val created = Todo(Id(1), "new Todo", "This is new Todo.")
+    when(mockDao.create(
+      ArgumentMatchers.eq(created.title),
+      ArgumentMatchers.eq(created.description))(any())).thenReturn(created)
+
+    val bodyJson = Json.obj(
+      "title" -> created.title,
+      "description" -> created.description
+    )
+
+    val result: Future[Result] = controller.newTodo().apply(FakeRequest().withBody(bodyJson))
+
+    status(result) should be (200)
+    contentAsJson(result).as[Todo] should be(created)
+  }
+
+  it should "return error when createTodo with empty Json" in {
+    val result: Future[Result] = controller.newTodo().apply(FakeRequest().withBody(Json.obj()))
+
+    status(result) should be (400)
+    contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
 }
