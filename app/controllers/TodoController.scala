@@ -17,6 +17,11 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
 
   implicit val todoFormat = Json.format[Todo]
 
+  implicit val createDtoFormmat : Format[CreateDto] = (
+    (JsPath \ "title").format[String](maxLength[String](30)) and
+      (JsPath \ "description").format[String]
+  )(CreateDto.apply, unlift(CreateDto.unapply))
+
 
   def findAll() = Action { implicit request =>
     val all = DB.readOnly { implicit session =>
@@ -34,17 +39,12 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
 
   def newTodo() = Action(parse.json) { implicit request =>
 
-    implicit val dtoRead: Reads[(String, String)] = (
-      (JsPath \ "title").read[String](maxLength[String](30)) and
-        (JsPath \ "description").read[String]
-      ) ((a: String, b: String) => (a, b))
-
-    val parsed: JsResult[(String, String)] = request.body.validate[(String, String)]
+    val parsed = request.body.validate[CreateDto]
 
     parsed match {
-      case JsSuccess(tuple, _) => {
+      case JsSuccess(CreateDto(title, description), _) => {
         DB.localTx { implicit session =>
-          Ok(Json.toJson(todoDao.create(tuple._1, tuple._2)))
+          Ok(Json.toJson(todoDao.create(title, description)))
         }
       }
       case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
@@ -52,6 +52,8 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
   }
 
 }
+
+case class CreateDto(title: String, description: String)
 
 @ImplementedBy(classOf[TodoDaoImpl])
 trait TodoDao {
