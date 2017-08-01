@@ -11,19 +11,11 @@ import play.api.libs.functional.syntax._
 import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
 
+import scala.util.{Failure, Success, Try}
+
 @Singleton
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
-  implicit val todoFormat : Format[Todo] = (
-    (JsPath \ "id").format[Long] and
-    (JsPath \ "title").format[String](maxLength[String](30)) and
-      (JsPath \ "description").format[String]
-  )((id, title, description) => Todo(Id(id),title, description), (t:Todo) => (t.id.value,t.title, t.description))
-
-  implicit val createDtoFormmat : Format[CreateDto] = (
-    (JsPath \ "title").format[String](maxLength[String](30)) and
-      (JsPath \ "description").format[String]
-  )(CreateDto.apply, unlift(CreateDto.unapply))
-
+  import TodoController.{todoFormat,createDtoFormmat}
 
   def findAll() = Action { implicit request =>
     val all = DB.readOnly { implicit session =>
@@ -53,6 +45,37 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     }
   }
 
+  def updateTodo(id: Long) = Action(parse.json) { implicit request =>
+
+    val parsed = request.body.validate[CreateDto]
+
+    parsed match {
+      case JsSuccess(CreateDto(title, description), _) => {
+        DB.localTx { implicit session =>
+          todoDao.save(Todo(Id(id), title, description)) match {
+            case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+            case Success(todo) => Ok(Json.toJson(todo))
+          }
+        }
+      }
+      case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
+    }
+  }
+
+}
+
+object TodoController {
+
+  implicit val todoFormat : Format[Todo] = (
+    (JsPath \ "id").format[Long] and
+      (JsPath \ "title").format[String](maxLength[String](30)) and
+      (JsPath \ "description").format[String]
+    )((id, title, description) => Todo(Id(id),title, description), (t:Todo) => (t.id.value,t.title, t.description))
+
+  implicit val createDtoFormmat : Format[CreateDto] = (
+    (JsPath \ "title").format[String](maxLength[String](30)) and
+      (JsPath \ "description").format[String]
+    )(CreateDto.apply, unlift(CreateDto.unapply))
 }
 
 case class CreateDto(title: String, description: String)
@@ -64,4 +87,6 @@ trait TodoDao {
   def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession): Seq[Todo]
 
   def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo
+
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
 }

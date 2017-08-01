@@ -1,5 +1,6 @@
 package integration
 
+import model.Todo
 import org.scalatestplus.play.PlaySpec
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
@@ -13,6 +14,8 @@ import scala.concurrent.duration.Duration
 
 class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
   override def fakeApplication(): Application = new GuiceApplicationBuilder().build()
+
+  import controllers.TodoController.todoFormat
 
   DBs.setupAll()
 
@@ -28,6 +31,18 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
       val wsClient = app.injector.instanceOf[WSClient]
       val newTodoURL = s"http://localhost:$port/todo/"
       val response = Await.result(wsClient.url(newTodoURL).post(Json.obj("title" -> "newOne", "description" -> "This is new one.")), Duration.Inf)
+      response.status mustBe 200
+    }
+
+    "update Todo" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val newTodoURL = s"http://localhost:$port/todo/"
+      val responseCreated = Await.result(wsClient.url(newTodoURL).post(Json.obj("title" -> "newOne", "description" -> "This is new one.")), Duration.Inf)
+      val created = responseCreated.json.as[Todo]
+
+      val updateURL = s"http://localhost:$port/todo/${created.id.value}"
+
+      val response = Await.result(wsClient.url(updateURL).put(Json.obj("title" -> "modified", "description" -> "modified")), Duration.Inf)
       response.status mustBe 200
     }
   }

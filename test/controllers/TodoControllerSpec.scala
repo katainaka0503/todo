@@ -13,6 +13,7 @@ import play.api.test._
 import scalikejdbc.config.DBs
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with MockitoSugar {
   behavior of "TodoController"
@@ -23,7 +24,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   val mockDao: TodoDao = mock[TodoDao]
 
   val controller = new TodoController(mockDao, stubCC)
-  import controller.todoFormat
+  import TodoController.{createDtoFormmat, todoFormat}
 
   after{
     reset(mockDao)
@@ -82,4 +83,42 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
     status(result) should be (400)
     contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
+
+  it should "updateTodo" in {
+    val modifing = Todo(Id(1), "modify", "This is Modifying.")
+    when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Success(modifing))
+
+    val bodyJson = Json.obj(
+      "title" -> modifing.title,
+      "description" -> modifing.description
+    )
+
+    val result: Future[Result] = controller.updateTodo(modifing.id.value).apply(FakeRequest().withBody(bodyJson))
+
+    status(result) should be (200)
+    contentAsJson(result).as[Todo] should be(modifing)
+  }
+
+  it should "return error when updateTodo with empty Json" in {
+    val result: Future[Result] = controller.updateTodo(1).apply(FakeRequest().withBody(Json.obj()))
+
+    status(result) should be (400)
+    contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
+  }
+
+  it should "return 404 when todo not exists" in {
+    val modifing = Todo(Id(1), "modify", "This is Modifying.")
+    when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Failure(new NoSuchElementException()))
+
+    val bodyJson = Json.obj(
+      "title" -> modifing.title,
+      "description" -> modifing.description
+    )
+
+    val result: Future[Result] = controller.updateTodo(modifing.id.value).apply(FakeRequest().withBody(bodyJson))
+
+    status(result) should be (404)
+    contentAsJson(result) should be(Json.obj("message" -> "Not found"))
+  }
+
 }
