@@ -31,7 +31,10 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
       val wsClient = app.injector.instanceOf[WSClient]
       val newTodoURL = s"http://localhost:$port/todo/"
       val response = Await.result(wsClient.url(newTodoURL).post(Json.obj("title" -> "newOne", "description" -> "This is new one.")), Duration.Inf)
+
       response.status mustBe 200
+
+      delete(response.json.as[Todo].id.value)
     }
 
     "update Todo" in {
@@ -44,6 +47,27 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
 
       val response = Await.result(wsClient.url(updateURL).put(Json.obj("title" -> "modified", "description" -> "modified")), Duration.Inf)
       response.status mustBe 200
+
+      delete(response.json.as[Todo].id.value)
+    }
+
+    "delete Todo" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val newTodoURL = s"http://localhost:$port/todo/"
+      val responseCreated = Await.result(wsClient.url(newTodoURL).post(Json.obj("title" -> "newOne", "description" -> "This is new one.")), Duration.Inf)
+      val id = responseCreated.json.as[Todo].id.value
+      val deleteTodoURL = s"http://localhost:$port/todo/$id"
+
+      val response = Await.result(wsClient.url(deleteTodoURL).delete(), Duration.Inf)
+
+      response.status mustBe 200
+    }
+
+    def delete(id: Long): Unit = {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val deleteTodoURL = s"http://localhost:$port/todo/$id"
+
+      Await.result(wsClient.url(deleteTodoURL).delete(), Duration.Inf)
     }
   }
 }
