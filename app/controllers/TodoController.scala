@@ -13,9 +13,11 @@ import scalikejdbc.{DB, DBSession}
 
 @Singleton
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
-  implicit def idFormat[A] = Json.format[Id[A]]
-
-  implicit val todoFormat = Json.format[Todo]
+  implicit val todoFormat : Format[Todo] = (
+    (JsPath \ "id").format[Long] and
+    (JsPath \ "title").format[String](maxLength[String](30)) and
+      (JsPath \ "description").format[String]
+  )((id, title, description) => Todo(Id(id),title, description), (t:Todo) => (t.id.value,t.title, t.description))
 
   implicit val createDtoFormmat : Format[CreateDto] = (
     (JsPath \ "title").format[String](maxLength[String](30)) and
