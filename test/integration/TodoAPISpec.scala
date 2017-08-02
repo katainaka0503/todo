@@ -55,22 +55,22 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAft
       val response = createTodo()
       response.status mustBe 200
 
-      deleteTodo(response.json.as[Todo].id.value)
+      deleteTodo(response.json.as[Todo].id)
     }
 
     "update Todo" in {
       val responseCreated = createTodo()
       val created = responseCreated.json.as[Todo]
 
-      val response = Await.result(wsClient.url(updateURL(created.id.value)).put(Json.obj("title" -> "modified", "description" -> "modified")), Duration.Inf)
+      val response = Await.result(wsClient.url(updateURL(created.id)).put(Json.obj("title" -> "modified", "description" -> "modified")), Duration.Inf)
       response.status mustBe 200
 
-      deleteTodo(response.json.as[Todo].id.value)
+      deleteTodo(response.json.as[Todo].id)
     }
 
     "delete Todo" in {
       val responseCreated = createTodo()
-      val id = responseCreated.json.as[Todo].id.value
+      val id = responseCreated.json.as[Todo].id
 
       val response = Await.result(wsClient.url(deleteURL(id)).delete(), Duration.Inf)
 
