@@ -54,7 +54,7 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
   }
 
   it should "return error when update todo not exists" in { implicit session =>
-    Todo.save(Todo(Id(-1), "not Exist", "hoge")) match {
+    Todo.save(Todo(-1, "not Exist", "hoge")) match {
       case Failure(e: NoSuchElementException) => succeed
       case _ => fail
     }
@@ -67,7 +67,7 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
   }
 
   it should "return error when delete todo not exists" in { implicit session =>
-    Todo.delete(Id(-1)) match {
+    Todo.delete(-1) match {
       case Failure(e: NoSuchElementException) => succeed
       case _ => fail
     }

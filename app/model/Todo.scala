@@ -8,7 +8,7 @@ import scalikejdbc._
 
 import scala.util.{Failure, Success, Try}
 
-case class Todo(id: Id[Todo], title: String, description: String)
+case class Todo(id: Long, title: String, description: String)
 
 object Todo extends SQLSyntaxSupport[Todo]{
   override def schemaName: Option[String] = Some("public")
@@ -19,7 +19,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
   def apply(c: SyntaxProvider[Todo])(rs: WrappedResultSet): Todo = apply(c.resultName)(rs)
   def apply(c: ResultName[Todo])(rs: WrappedResultSet): Todo = new Todo(
-    id = new Id(rs.get(c.id)),
+    id = rs.get(c.id),
     title = rs.get(c.title),
     description = rs.get(c.description))
 
@@ -50,7 +50,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
       )
     }.updateAndReturnGeneratedKey.apply()
 
-    Todo(Id(id.toLong), title, description)
+    Todo(id, title, description)
   }
 
   def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo] = {
@@ -58,7 +58,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
       update(Todo).set(
         column.title -> todo.title,
         column.description -> todo.description
-      ).where.eq(column.id, todo.id.value)
+      ).where.eq(column.id, todo.id)
     }.update.apply()
 
     if(num == 0){
@@ -68,9 +68,9 @@ object Todo extends SQLSyntaxSupport[Todo]{
     }
   }
 
-  def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit] = {
+  def delete(id: Long)(implicit session: DBSession = autoSession): Try[Unit] = {
     val num = withSQL {
-      deleteFrom(Todo).where.eq(column.id, id.value)
+      deleteFrom(Todo).where.eq(column.id, id)
     }.update.apply()
 
     if(num == 0){
@@ -91,6 +91,6 @@ class TodoDaoImpl extends TodoDao {
 
   override def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
 
-  override def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit] = Todo.delete(id)
+  override def delete(id: Long)(implicit session: DBSession = autoSession): Try[Unit] = Todo.delete(id)
 
 }

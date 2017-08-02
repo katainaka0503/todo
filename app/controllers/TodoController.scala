@@ -3,20 +3,28 @@ package controllers
 import javax.inject._
 
 import com.google.inject.ImplementedBy
+import io.swagger.annotations._
 import model.Todo.autoSession
-import model.{Id, Todo, TodoDaoImpl}
-import play.api.libs.json._
-import play.api.libs.json.Reads._
+import model.{Todo, TodoDaoImpl}
 import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json._
 import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
 
 import scala.util.{Failure, Success, Try}
 
 @Singleton
+@Api(value = "Todo API")
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
-  import TodoController.{todoFormat,createDtoFormmat}
 
+  import TodoController.{todoFormat, createDtoFormmat}
+
+  @ApiOperation(
+    value = "TodoのAPI",
+    produces = "application/json",
+    response = classOf[Seq[Todo]]
+  )
   def findAll() = Action { implicit request =>
     val all = DB.readOnly { implicit session =>
       todoDao.findAll()
@@ -24,13 +32,32 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     Ok(Json.toJson(all))
   }
 
-  def findAllByKeyword(keyword: String) = Action { implicit request =>
-    val found = DB.readOnly { implicit session =>
-      todoDao.findAllByKeyword(keyword)
+  @ApiOperation(
+    httpMethod = "GET",
+    value = "Todoをキーワードで検索",
+    produces = "application/json",
+    response = classOf[Seq[Todo]]
+  )
+  def findAllByKeyword(@ApiParam(value = "検索対象のTodoが含むキーワード") keyword: String) =
+    Action { implicit request =>
+      val found = DB.readOnly { implicit session =>
+        todoDao.findAllByKeyword(keyword)
+      }
+      Ok(Json.toJson(found))
     }
-    Ok(Json.toJson(found))
-  }
 
+  @ApiOperation(
+    value = "Todoを新規作成",
+    consumes = "application/json",
+    produces = "application/json",
+    response = classOf[Todo]
+  )
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "todoDto", value = "作成するTodoのデータ", required = true, dataType = "controllers.CreateDto", paramType = "body")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 400, message = "Invalid json", response = classOf[MessageDto])
+  ))
   def newTodo() = Action(parse.json) { implicit request =>
 
     val parsed = request.body.validate[CreateDto]
@@ -45,28 +72,48 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     }
   }
 
-  def updateTodo(id: Long) = Action(parse.json) { implicit request =>
+  @ApiOperation(
+    value = "Todoを更新",
+    consumes = "application/json",
+    produces = "application/json",
+    response = classOf[Todo]
+  )
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "todoDto", value = "Todoの更新データ", required = true, dataType = "controllers.CreateDto", paramType = "body")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 400, message = "Invalid json", response = classOf[MessageDto]),
+    new ApiResponse(code = 404, message = "Not found", response = classOf[MessageDto])
+  ))
+  def updateTodo(@ApiParam(value = "更新対象のTodoのId") id: Long) =
+    Action(parse.json) { implicit request =>
 
-    val parsed = request.body.validate[CreateDto]
+      val parsed = request.body.validate[CreateDto]
 
-    parsed match {
-      case JsSuccess(CreateDto(title, description), _) => {
-        DB.localTx { implicit session =>
-          todoDao.save(Todo(Id(id), title, description)) match {
-            case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
-            case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
-            case Success(todo) => Ok(Json.toJson(todo))
+      parsed match {
+        case JsSuccess(CreateDto(title, description), _) => {
+          DB.localTx { implicit session =>
+            todoDao.save(Todo(id, title, description)) match {
+              case Failure(e: NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+              case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
+              case Success(todo) => Ok(Json.toJson(todo))
+            }
           }
         }
+        case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
       }
-      case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
     }
-  }
 
-  def deleteTodo(id: Long) = Action { implicit request =>
-    DB.localTx{ implicit session =>
-      todoDao.delete(Id(id)) match {
-        case Failure(e : NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
+  @ApiOperation(
+    value = "Todoを削除"
+  )
+  @ApiResponses(Array(
+    new ApiResponse(code = 404, message = "Not found", response = classOf[MessageDto])
+  ))
+  def deleteTodo(@ApiParam(value = "削除対象のTodoのId") id: Long) = Action { implicit request =>
+    DB.localTx { implicit session =>
+      todoDao.delete(id) match {
+        case Failure(e: NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
         case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
         case Success(()) => Ok
       }
@@ -77,18 +124,19 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
 
 object TodoController {
 
-  implicit val todoFormat : Format[Todo] = (
+  implicit val todoFormat: Format[Todo] = (
     (JsPath \ "id").format[Long] and
       (JsPath \ "title").format[String](maxLength[String](30)) and
       (JsPath \ "description").format[String]
-    )((id, title, description) => Todo(Id(id),title, description), (t:Todo) => (t.id.value,t.title, t.description))
+    ) (Todo.apply, unlift(Todo.unapply))
 
-  implicit val createDtoFormmat : Format[CreateDto] = (
+  implicit val createDtoFormmat: Format[CreateDto] = (
     (JsPath \ "title").format[String](maxLength[String](30)) and
       (JsPath \ "description").format[String]
-    )(CreateDto.apply, unlift(CreateDto.unapply))
+    ) (CreateDto.apply, unlift(CreateDto.unapply))
 }
 
+case class MessageDto(message: String)
 case class CreateDto(title: String, description: String)
 
 @ImplementedBy(classOf[TodoDaoImpl])
@@ -101,5 +149,5 @@ trait TodoDao {
 
   def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]
 
-  def delete(id: Id[Todo])(implicit session: DBSession = autoSession): Try[Unit]
+  def delete(id: Long)(implicit session: DBSession = autoSession): Try[Unit]
 }

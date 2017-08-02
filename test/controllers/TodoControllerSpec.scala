@@ -1,6 +1,6 @@
 package controllers
 
-import model.{Id, Todo}
+import model.Todo
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
@@ -31,7 +31,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   }
 
   it should "findAllTodos" in {
-    val todos = List(Todo(Id(1), "title1", "desc1"), Todo(Id(2), "title2", "desc2"))
+    val todos = List(Todo(1, "title1", "desc1"), Todo(2, "title2", "desc2"))
     when(mockDao.findAll()(any())).thenReturn(todos)
 
     val result: Future[Result] = controller.findAll().apply(FakeRequest())
@@ -51,7 +51,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
   it should "findByKeyword" in {
     val keyword = "keyword"
-    val found = List(Todo(Id(1), keyword, "desc1"), Todo(Id(2), "title2", keyword))
+    val found = List(Todo(1, keyword, "desc1"), Todo(2, "title2", keyword))
     when(mockDao.findAllByKeyword(ArgumentMatchers.eq(keyword))(any())).thenReturn(found)
 
     val result: Future[Result] = controller.findAllByKeyword(keyword).apply(FakeRequest())
@@ -61,7 +61,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   }
 
   it should "createTodo" in {
-    val created = Todo(Id(1), "new Todo", "This is new Todo.")
+    val created = Todo(1, "new Todo", "This is new Todo.")
     when(mockDao.create(
       ArgumentMatchers.eq(created.title),
       ArgumentMatchers.eq(created.description))(any())).thenReturn(created)
@@ -85,7 +85,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   }
 
   it should "updateTodo" in {
-    val modifing = Todo(Id(1), "modify", "This is Modifying.")
+    val modifing = Todo(1, "modify", "This is Modifying.")
     when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Success(modifing))
 
     val bodyJson = Json.obj(
@@ -93,7 +93,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
       "description" -> modifing.description
     )
 
-    val result: Future[Result] = controller.updateTodo(modifing.id.value).apply(FakeRequest().withBody(bodyJson))
+    val result: Future[Result] = controller.updateTodo(modifing.id).apply(FakeRequest().withBody(bodyJson))
 
     status(result) should be (200)
     contentAsJson(result).as[Todo] should be(modifing)
@@ -107,7 +107,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   }
 
   it should "return 404 when todo to update not exists" in {
-    val modifing = Todo(Id(1), "modify", "This is Modifying.")
+    val modifing = Todo(1, "modify", "This is Modifying.")
     when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Failure(new NoSuchElementException()))
 
     val bodyJson = Json.obj(
@@ -115,26 +115,26 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
       "description" -> modifing.description
     )
 
-    val result: Future[Result] = controller.updateTodo(modifing.id.value).apply(FakeRequest().withBody(bodyJson))
+    val result: Future[Result] = controller.updateTodo(modifing.id).apply(FakeRequest().withBody(bodyJson))
 
     status(result) should be (404)
     contentAsJson(result) should be(Json.obj("message" -> "Not found"))
   }
 
   it should "delete todo" in {
-    val id = Id[Todo](1)
-    when(mockDao.delete(ArgumentMatchers.eq(id))(any())).thenReturn(Success(()))
+    val id = 1
+    when(mockDao.delete(anyLong())(any())).thenReturn(Success(()))
 
-    val result: Future[Result] = controller.deleteTodo(id.value).apply(FakeRequest())
+    val result: Future[Result] = controller.deleteTodo(id).apply(FakeRequest())
 
     status(result) should be (200)
   }
 
   it should "return 404 when todo to delete not exists" in {
-    val id = Id[Todo](-1)
-    when(mockDao.delete(ArgumentMatchers.eq(id))(any())).thenReturn(Failure(new NoSuchElementException()))
+    val id = -1
+    when(mockDao.delete(anyLong())(any())).thenReturn(Failure(new NoSuchElementException()))
 
-    val result: Future[Result] = controller.deleteTodo(id.value).apply(FakeRequest())
+    val result: Future[Result] = controller.deleteTodo(id).apply(FakeRequest())
 
     status(result) should be (404)
     contentAsJson(result) should be(Json.obj("message" -> "Not found"))
