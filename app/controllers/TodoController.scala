@@ -115,7 +115,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
       todoDao.delete(id) match {
         case Failure(e: NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
         case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
-        case Success(()) => Ok
+        case Success(()) => Ok(Json.obj())
       }
     }
   }
