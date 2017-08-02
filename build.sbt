@@ -1,5 +1,7 @@
 import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 
+import scala.language.postfixOps
+
 name := """todo"""
 organization := "com.example"
 
@@ -35,3 +37,18 @@ dockerCommands := Seq(
   ExecCmd("ENTRYPOINT", "bin/quiz-server"),
   ExecCmd("CMD")
 )
+
+lazy val dockerComposeUp = taskKey[Unit]("Execute the shell script")
+lazy val dockerComposeUpAttached = taskKey[Unit]("Execute the shell script")
+
+dockerComposeUp := {
+  (stage in Docker).value
+
+  ("docker-compose up --build -d" lines_!).foreach(println)
+}
+
+dockerComposeUpAttached := {
+  (stage in Docker).value
+
+  ("docker-compose up --build" lines_!).foreach(println)
+}
