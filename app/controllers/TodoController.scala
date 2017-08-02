@@ -9,6 +9,7 @@ import model.{Todo, TodoDaoImpl}
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
+import play.api.mvc.Results.EmptyContent
 import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
 
@@ -53,17 +54,17 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     response = classOf[Todo]
   )
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "todoDto", value = "作成するTodoのデータ", required = true, dataType = "controllers.CreateDto", paramType = "body")
+    new ApiImplicitParam(name = "todoDto", value = "作成するTodoのデータ", required = true, dataType = "controllers.TodoDataDto", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 400, message = "Invalid json", response = classOf[MessageDto])
   ))
   def newTodo() = Action(parse.json) { implicit request =>
 
-    val parsed = request.body.validate[CreateDto]
+    val parsed = request.body.validate[TodoDataDto]
 
     parsed match {
-      case JsSuccess(CreateDto(title, description), _) => {
+      case JsSuccess(TodoDataDto(title, description), _) => {
         DB.localTx { implicit session =>
           Ok(Json.toJson(todoDao.create(title, description)))
         }
@@ -79,7 +80,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     response = classOf[Todo]
   )
   @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "todoDto", value = "Todoの更新データ", required = true, dataType = "controllers.CreateDto", paramType = "body")
+    new ApiImplicitParam(name = "todoDto", value = "Todoの更新データ", required = true, dataType = "controllers.TodoDataDto", paramType = "body")
   ))
   @ApiResponses(Array(
     new ApiResponse(code = 400, message = "Invalid json", response = classOf[MessageDto]),
@@ -88,10 +89,10 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
   def updateTodo(@ApiParam(value = "更新対象のTodoのId") id: Long) =
     Action(parse.json) { implicit request =>
 
-      val parsed = request.body.validate[CreateDto]
+      val parsed = request.body.validate[TodoDataDto]
 
       parsed match {
-        case JsSuccess(CreateDto(title, description), _) => {
+        case JsSuccess(TodoDataDto(title, description), _) => {
           DB.localTx { implicit session =>
             todoDao.save(Todo(id, title, description)) match {
               case Failure(e: NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
@@ -105,7 +106,9 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     }
 
   @ApiOperation(
-    value = "Todoを削除"
+    value = "Todoを削除",
+    produces = "application/json",
+    response = classOf[EmptyContent]
   )
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Not found", response = classOf[MessageDto])
@@ -130,14 +133,14 @@ object TodoController {
       (JsPath \ "description").format[String]
     ) (Todo.apply, unlift(Todo.unapply))
 
-  implicit val createDtoFormmat: Format[CreateDto] = (
+  implicit val createDtoFormmat: Format[TodoDataDto] = (
     (JsPath \ "title").format[String](maxLength[String](30)) and
       (JsPath \ "description").format[String]
-    ) (CreateDto.apply, unlift(CreateDto.unapply))
+    ) (TodoDataDto.apply, unlift(TodoDataDto.unapply))
 }
 
 case class MessageDto(message: String)
-case class CreateDto(title: String, description: String)
+case class TodoDataDto(title: String, description: String)
 
 @ImplementedBy(classOf[TodoDaoImpl])
 trait TodoDao {
