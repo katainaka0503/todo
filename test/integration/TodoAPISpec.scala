@@ -27,6 +27,14 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
       response.status mustBe 200
     }
 
+    "search Todo by keyword" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val keyword = "keyword"
+      val todoListURL = s"http://localhost:$port/todo/list?keyword=$keyword"
+      val response = Await.result(wsClient.url(todoListURL).get(), Duration.Inf)
+      response.status mustBe 200
+    }
+
     "create new Todo" in {
       val wsClient = app.injector.instanceOf[WSClient]
       val newTodoURL = s"http://localhost:$port/todo/"
