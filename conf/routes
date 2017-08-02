@@ -6,3 +6,5 @@ POST    /todo/              controllers.TodoController.newTodo()
 PUT     /todo/:id           controllers.TodoController.updateTodo(id: Long)
 
 DELETE  /todo/:id           controllers.TodoController.deleteTodo(id: Long)
+
+GET     /api-docs           controllers.ApiHelpController.getResources
