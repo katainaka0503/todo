@@ -16,7 +16,10 @@ import scalikejdbc.{DB, DBSession}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
-@Api(value = "Todo API")
+@Api(
+  value = "Todo API",
+  protocols = "http",
+)
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
 
   import TodoController.{todoFormat, createDtoFormmat}
