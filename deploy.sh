@@ -58,7 +58,7 @@ make_task_def(){
                     "value": "%s"
                 },
                 {
-                    "name": "ALLOWED_HOST",
+                    "name": "API_ENDPOINT",
                     "value": "%s"
                 },
                 {
@@ -77,7 +77,7 @@ make_task_def(){
 		}
 	]'
 
-	task_def=$(printf "$task_template" $AWS_ACCOUNT_ID $CIRCLE_SHA1 $APPLICATION_SECRET $ALLOWED_HOST $PGURL $PGUSER $PGPASSWORD)
+	task_def=$(printf "$task_template" $AWS_ACCOUNT_ID $CIRCLE_SHA1 $APPLICATION_SECRET $API_ENDPOINT $PGURL $PGUSER $PGPASSWORD)
 	echo $task_def
 }
 
