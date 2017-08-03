@@ -34,7 +34,7 @@ dockerCommands := Seq(
   Cmd("WORKDIR", "/opt/docker"), Cmd("ADD", "opt", "/opt"),
   Cmd("RUN", "chown -R daemon:daemon ."),
   Cmd("USER", "daemon"),
-  ExecCmd("ENTRYPOINT", "bin/quiz-server"),
+  ExecCmd("ENTRYPOINT", "bin/todo"),
   ExecCmd("CMD")
 )
 
