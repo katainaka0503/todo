@@ -9,3 +9,9 @@ compile:
 test:
   override:
     - sbt test
+
+deployment:
+  prod:
+    branch: master
+    commands:
+      - . ./deploy.sh
