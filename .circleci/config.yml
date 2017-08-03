@@ -23,6 +23,15 @@ jobs:
           keys:
           - v1-dependencies-{{ checksum "build.sbt" }}
           - v1-dependencies-
+          
+      - run:
+          name: install Docker clinet
+            command: |
+              set -x
+              VER="17.03.0-ce"
+              curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
+              tar -xz -C /tmp -f /tmp/docker-$VER.tgz
+              mv /tmp/docker/* /usr/bin
 
       - run: cat /dev/null | sbt compile
 
@@ -37,7 +46,6 @@ jobs:
           name: Deploy to ECS if tests pass and branch is Master
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              sbt docker:stage
-              docker build /root/repo/target/docker/stage/
+              sbt docker:publishLocal
               source deploy.sh
             fi
