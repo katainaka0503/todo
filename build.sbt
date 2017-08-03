@@ -38,6 +38,8 @@ dockerCommands := Seq(
   ExecCmd("CMD")
 )
 
+dockerUpdateLatest := true
+
 lazy val dockerComposeUp = taskKey[Unit]("Execute the shell script")
 lazy val dockerComposeUpAttached = taskKey[Unit]("Execute the shell script")
 
