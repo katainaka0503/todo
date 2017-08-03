@@ -1,0 +1,42 @@
+# Scala CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/sample-config/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:8-jdk
+
+    working_directory: ~/repo
+
+    environment:
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+
+    steps:
+      - checkout
+
+      - setup_remote_docker
+
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "build.sbt" }}
+          - v1-dependencies-
+
+      - run: cat /dev/null | sbt compile
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies--{{ checksum "build.sbt" }}
+
+      - run: cat /dev/null | sbt test
+
+      - deploy:
+          name: Deploy to S3 if tests pass and branch is Master
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              sbt docker:publishLocal
+              deploy.sh
+            fi
