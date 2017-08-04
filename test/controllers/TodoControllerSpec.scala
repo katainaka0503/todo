@@ -5,7 +5,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, FlatSpec, Matchers}
 import play.api.libs.json.Json
 import play.api.mvc.{ControllerComponents, Result}
 import play.api.test.Helpers._
@@ -13,7 +13,7 @@ import play.api.test._
 import scalikejdbc.config.DBs
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with MockitoSugar {
   behavior of "TodoController"
@@ -24,7 +24,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   val mockDao: TodoDao = mock[TodoDao]
 
   val controller = new TodoController(mockDao, stubCC)
-  import TodoController.{createDtoFormmat, todoFormat}
+  import TodoController.todoFormat
 
   after{
     reset(mockDao)
@@ -32,7 +32,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
   it should "findAllTodos" in {
     val todos = List(Todo(1, "title1", "desc1"), Todo(2, "title2", "desc2"))
-    when(mockDao.findAll()(any())).thenReturn(todos)
+    when(mockDao.findAll()(any())).thenReturn(Future.successful(todos))
 
     val result: Future[Result] = controller.findAll().apply(FakeRequest())
 
@@ -41,7 +41,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   }
 
   it should "findNothing when todo is not registered" in {
-    when(mockDao.findAll()(any())).thenReturn(Seq.empty)
+    when(mockDao.findAll()(any())).thenReturn(Future.successful(Seq.empty))
 
     val result: Future[Result] = controller.findAll().apply(FakeRequest())
 
@@ -52,7 +52,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   it should "findByKeyword" in {
     val keyword = "keyword"
     val found = List(Todo(1, keyword, "desc1"), Todo(2, "title2", keyword))
-    when(mockDao.findAllByKeyword(ArgumentMatchers.eq(keyword))(any())).thenReturn(found)
+    when(mockDao.findAllByKeyword(ArgumentMatchers.eq(keyword))(any())).thenReturn(Future.successful(found))
 
     val result: Future[Result] = controller.findAllByKeyword(keyword).apply(FakeRequest())
 
@@ -64,7 +64,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
     val created = Todo(1, "new Todo", "This is new Todo.")
     when(mockDao.create(
       ArgumentMatchers.eq(created.title),
-      ArgumentMatchers.eq(created.description))(any())).thenReturn(created)
+      ArgumentMatchers.eq(created.description))(any())).thenReturn(Future.successful(created))
 
     val bodyJson = Json.obj(
       "title" -> created.title,
@@ -86,7 +86,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
   it should "updateTodo" in {
     val modifing = Todo(1, "modify", "This is Modifying.")
-    when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Success(modifing))
+    when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Future.successful(modifing))
 
     val bodyJson = Json.obj(
       "title" -> modifing.title,
@@ -108,7 +108,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
   it should "return 404 when todo to update not exists" in {
     val modifing = Todo(1, "modify", "This is Modifying.")
-    when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Failure(new NoSuchElementException()))
+    when(mockDao.save(ArgumentMatchers.eq(modifing))(any())).thenReturn(Future.failed(new NoSuchElementException()))
 
     val bodyJson = Json.obj(
       "title" -> modifing.title,
@@ -123,7 +123,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
   it should "delete todo" in {
     val id = 1
-    when(mockDao.delete(anyLong())(any())).thenReturn(Success(()))
+    when(mockDao.delete(anyLong())(any())).thenReturn(Future.successful(()))
 
     val result: Future[Result] = controller.deleteTodo(id).apply(FakeRequest())
 
@@ -132,7 +132,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
   it should "return 404 when todo to delete not exists" in {
     val id = -1
-    when(mockDao.delete(anyLong())(any())).thenReturn(Failure(new NoSuchElementException()))
+    when(mockDao.delete(anyLong())(any())).thenReturn(Future.failed(new NoSuchElementException()))
 
     val result: Future[Result] = controller.deleteTodo(id).apply(FakeRequest())
 
