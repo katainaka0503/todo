@@ -1,25 +1,50 @@
-import javax.inject.Singleton
 
-import play.api.http.HttpErrorHandler
+import javax.inject._
+
+import play.api.http.DefaultHttpErrorHandler
+import play.api._
 import play.api.libs.json.Json
-import play.api.mvc.{RequestHeader, Result}
-import play.api.mvc.Results.{InternalServerError, Status}
+import play.api.mvc._
+import play.api.mvc.Results._
+import play.api.routing.Router
 
-import scala.concurrent.Future
+import scala.concurrent._
 
 @Singleton
-class ErrorHandler extends HttpErrorHandler {
+class ErrorHandler @Inject() (
+                               env: Environment,
+                               config: Configuration,
+                               sourceMapper: OptionalSourceMapper,
+                               router: Provider[Router]
+                             ) extends DefaultHttpErrorHandler(env, config, sourceMapper, router) {
 
-  def onClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = {
+
+  override protected def onDevServerError(request: RequestHeader, exception: UsefulException): Future[Result] = {
     Future.successful(
-      Status(statusCode)(Json.obj("message" -> s"A client error occurred: $message"))
+      InternalServerError(Json.obj("message" -> s"A server error occurred: ${exception.getMessage}"))
     )
   }
 
-  def onServerError(request: RequestHeader, exception: Throwable): Future[Result] = {
+  override def onProdServerError(request: RequestHeader, exception: UsefulException): Future[Result] = {
     Future.successful(
-      InternalServerError(Json.obj("message" -> exception.getMessage))
+      InternalServerError(Json.obj("message" -> s"A server error occurred"))
     )
+  }
+
+  override protected def onBadRequest(request: RequestHeader, message: String): Future[Result] = {
+    Future.successful(
+      BadRequest(Json.obj("message" -> "Bad Request"))
+    )
+  }
+
+  override protected def onNotFound(request: RequestHeader, message: String): Future[Result] = {
+    Future.successful(
+      NotFound(Json.obj("message" -> "Not Found"))
+    )
+  }
+
+  override protected def onOtherClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = {
+    Results.Status(statusCode)("message" -> "A client error occured")
   }
 }
 
