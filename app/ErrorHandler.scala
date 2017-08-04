@@ -44,7 +44,9 @@ class ErrorHandler @Inject() (
   }
 
   override protected def onOtherClientError(request: RequestHeader, statusCode: Int, message: String): Future[Result] = {
-    Results.Status(statusCode)("message" -> "A client error occured")
+    Future.successful(
+      Results.Status(statusCode)(Json.obj("message" -> "A client error occured"))
+    )
   }
 }
 
