@@ -14,17 +14,15 @@ import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 @Singleton
 @Api(
   value = "Todo API",
-  protocols = "http",
+  protocols = "http"
 )
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
 
   import TodoController.{todoFormat, createDtoFormmat}
-  import scalikejdbc.TxBoundary.Future.futureTxBoundary
 
   @ApiOperation(
     value = "TodoのAPI",

@@ -13,7 +13,7 @@ import scalikejdbc.config.DBs
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 
-class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAfterAll {
+class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite {
   override def fakeApplication(): Application = new GuiceApplicationBuilder().build()
 
   import controllers.TodoController.todoFormat
@@ -37,7 +37,6 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAft
   def createTodo(): WSResponse = Await.result(wsClient.url(newTodoURL).post(Json.obj("title" -> "newOne", "description" -> "This is new one.")), Duration.Inf)
 
   def deleteTodo(id: Long): WSResponse = Await.result(wsClient.url(deleteURL(id)).delete(), Duration.Inf)
-
 
   "TodoAPI" should {
     "list all Todo" in {
@@ -70,6 +69,7 @@ class TodoAPISpec extends PlaySpec with GuiceOneServerPerSuite with BeforeAndAft
 
     "delete Todo" in {
       val responseCreated = createTodo()
+
       val id = responseCreated.json.as[Todo].id
 
       val response = Await.result(wsClient.url(deleteURL(id)).delete(), Duration.Inf)

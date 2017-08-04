@@ -8,12 +8,11 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import scalikejdbc.config.DBs
 import scalikejdbc.scalatest.AutoRollback
-import scalikejdbc.{DBSession, NamedDB, SQL}
+import scalikejdbc.{DBSession, NamedDB}
 
-import scala.concurrent.{Await, Future, duration}
-import scala.concurrent.duration._
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with GuiceOneAppPerSuite {
