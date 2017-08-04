@@ -20,10 +20,11 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
   override def fakeApplication(): Application = new GuiceApplicationBuilder().build()
 
   override def db = NamedDB('default).toDB
-  
+
   def await[A](future: Future[A]): A = Await.result(future, 500.millis)
-  def awaitException[A](future: Future[A]): Throwable = await{
-    future.transform{
+
+  def awaitException[A](future: Future[A]): Throwable = await {
+    future.transform {
       case Failure(e: Throwable) => Success(e)
       case Success(_) => Failure(new NoSuchElementException())
     }
@@ -35,9 +36,13 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
 
   override def fixture(implicit session: DBSession) {
     await {
-      Todo.create("KeywordContains", "description")
-      Todo.create("hogehoge", "containsKeyword")
-      Todo.create("donotContains", "test")
+      Future.sequence {
+        List(
+          Todo.create("KeywordContains", "description"),
+          Todo.create("hogehoge", "containsKeyword"),
+          Todo.create("donotContains", "test"))
+      }
+
     }
   }
 
@@ -54,7 +59,7 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     all.length should be(3)
   }
 
-  it should "create todo" in {implicit session =>
+  it should "create todo" in { implicit session =>
     await(Todo.create("newOne", "This is new Todo item."))
 
     val all = await(Todo.findAll())
@@ -62,26 +67,33 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     all.length should be(4)
   }
 
+  it should "create todo with title 30 charcters" in { implicit session =>
+    val created = await(Todo.create("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ", "This is new Todo item."))
+    val found = await(Todo.findAllByKeyword("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ"))
+
+    Seq(created) should equal(found)
+  }
+
   it should "update todo" in { implicit session =>
     val created = await(Todo.create("newOne", "This is new Todo item."))
     val modified = created.copy(title = "ModifiedOne")
 
-    await(Todo.save(modified)) should be (modified)
+    await(Todo.save(modified)) should be(modified)
 
-    await(Todo.findAllByKeyword("Modified")).length should be (1)
+    await(Todo.findAllByKeyword("Modified")).length should be(1)
   }
 
   it should "return error when update todo not exists" in { implicit session =>
-    awaitException(Todo.save(Todo(-1, "not Exist", "hoge"))) shouldBe a [NoSuchElementException]
+    awaitException(Todo.save(Todo(-1, "not Exist", "hoge"))) shouldBe a[NoSuchElementException]
   }
 
   it should "delete todo" in { implicit session =>
     val created = await(Todo.create("newOne", "This is new Todo item."))
 
-    await(Todo.delete(created.id)) should be (())
+    await(Todo.delete(created.id)) should be(())
   }
 
   it should "return error when delete todo not exists" in { implicit session =>
-    awaitException(Todo.delete(-1)) shouldBe a [NoSuchElementException]
+    awaitException(Todo.delete(-1)) shouldBe a[NoSuchElementException]
   }
 }

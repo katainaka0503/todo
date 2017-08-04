@@ -62,7 +62,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   }
 
   it should "createTodo" in {
-    val created = Todo(1, "new Todo", "This is new Todo.")
+    val created = Todo(1, "あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ", "全角30文字")
     when(mockDao.create(
       ArgumentMatchers.eq(created.title),
       ArgumentMatchers.eq(created.description))(any())).thenReturn(Future.successful(created))
@@ -76,6 +76,18 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     status(result) should be (200)
     contentAsJson(result).as[Todo] should be(created)
+  }
+
+  it should "return error when attempt to create todo with too long title" in {
+    val bodyJson = Json.obj(
+      "title" -> "あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこあ",
+      "description" -> "全角３１文字"
+    )
+
+    val result: Future[Result] = controller.newTodo().apply(FakeRequest().withBody(bodyJson))
+
+    status(result) should be (400)
+    contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
 
   it should "return error when createTodo with empty Json" in {
