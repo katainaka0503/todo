@@ -24,6 +24,7 @@ import scala.util.{Failure, Success, Try}
 class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
 
   import TodoController.{todoFormat, createDtoFormmat}
+  import scalikejdbc.TxBoundary.Future.futureTxBoundary
 
   @ApiOperation(
     value = "TodoのAPI",
@@ -32,7 +33,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
   )
   def findAll() = Action.async { implicit request =>
     for {
-      all <- DB.readOnly { implicit session =>
+      all <- DB.futureLocalTx{ implicit session =>
         todoDao.findAll()
       }
     } yield Ok(Json.toJson(all))
@@ -48,7 +49,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
   def findAllByKeyword(@ApiParam(value = "検索対象のTodoが含むキーワード") keyword: String) =
     Action.async { implicit request =>
       for {
-        found <- DB.readOnly {
+        found <- DB.futureLocalTx {
           implicit session =>
             todoDao.findAllByKeyword(keyword)
         }
@@ -73,7 +74,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
 
     parsed match {
       case JsSuccess(TodoDataDto(title, description), _) => {
-        DB.localTx { implicit session =>
+        DB.futureLocalTx { implicit session =>
           for {
             created <- todoDao.create(title, description)
           } yield Ok(Json.toJson(created))
@@ -103,7 +104,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
 
       parsed match {
         case JsSuccess(TodoDataDto(title, description), _) => {
-          DB.localTx { implicit session =>
+          DB.futureLocalTx { implicit session =>
             todoDao.save(Todo(id, title, description))
               .map { todo => Ok(Json.toJson(todo)) }
               .recover {
