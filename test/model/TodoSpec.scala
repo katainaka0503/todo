@@ -20,7 +20,7 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
   override def fakeApplication(): Application = new GuiceApplicationBuilder().build()
 
   override def db = NamedDB('default).toDB
-  
+
   def await[A](future: Future[A]): A = Await.result(future, 500.millis)
   def awaitException[A](future: Future[A]): Throwable = await{
     future.transform{
@@ -60,6 +60,13 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     val all = await(Todo.findAll())
 
     all.length should be(4)
+  }
+
+  it should "create todo with title 30 charcters" in { implicit session =>
+    val created = await(Todo.create("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ", "This is new Todo item."))
+    val found = await(Todo.findAllByKeyword("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ"))
+
+    Seq(created) should equal (found)
   }
 
   it should "update todo" in { implicit session =>
