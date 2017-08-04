@@ -13,6 +13,7 @@ import play.api.mvc.Results.EmptyContent
 import play.api.mvc._
 import scalikejdbc.{DB, DBSession}
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 @Singleton
@@ -20,21 +21,24 @@ import scala.util.{Failure, Success, Try}
   value = "Todo API",
   protocols = "http",
 )
-class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) extends AbstractController(cc) {
+class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
 
   import TodoController.{todoFormat, createDtoFormmat}
+  import scalikejdbc.TxBoundary.Future.futureTxBoundary
 
   @ApiOperation(
     value = "TodoのAPI",
     produces = "application/json",
     response = classOf[Seq[Todo]]
   )
-  def findAll() = Action { implicit request =>
-    val all = DB.readOnly { implicit session =>
-      todoDao.findAll()
-    }
-    Ok(Json.toJson(all))
+  def findAll() = Action.async { implicit request =>
+    for {
+      all <- DB.futureLocalTx{ implicit session =>
+        todoDao.findAll()
+      }
+    } yield Ok(Json.toJson(all))
   }
+
 
   @ApiOperation(
     httpMethod = "GET",
@@ -43,11 +47,13 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     response = classOf[Seq[Todo]]
   )
   def findAllByKeyword(@ApiParam(value = "検索対象のTodoが含むキーワード") keyword: String) =
-    Action { implicit request =>
-      val found = DB.readOnly { implicit session =>
-        todoDao.findAllByKeyword(keyword)
-      }
-      Ok(Json.toJson(found))
+    Action.async { implicit request =>
+      for {
+        found <- DB.futureLocalTx {
+          implicit session =>
+            todoDao.findAllByKeyword(keyword)
+        }
+      } yield Ok(Json.toJson(found))
     }
 
   @ApiOperation(
@@ -62,17 +68,19 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
   @ApiResponses(Array(
     new ApiResponse(code = 400, message = "Invalid json", response = classOf[MessageDto])
   ))
-  def newTodo() = Action(parse.json) { implicit request =>
+  def newTodo() = Action(parse.json).async { implicit request =>
 
     val parsed = request.body.validate[TodoDataDto]
 
     parsed match {
       case JsSuccess(TodoDataDto(title, description), _) => {
-        DB.localTx { implicit session =>
-          Ok(Json.toJson(todoDao.create(title, description)))
+        DB.futureLocalTx { implicit session =>
+          for {
+            created <- todoDao.create(title, description)
+          } yield Ok(Json.toJson(created))
         }
       }
-      case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
+      case JsError(_) => Future.successful(BadRequest(Json.obj("message" -> "Invalid Json")))
     }
   }
 
@@ -90,21 +98,21 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
     new ApiResponse(code = 404, message = "Not found", response = classOf[MessageDto])
   ))
   def updateTodo(@ApiParam(value = "更新対象のTodoのId") id: Long) =
-    Action(parse.json) { implicit request =>
+    Action(parse.json).async { implicit request =>
 
       val parsed = request.body.validate[TodoDataDto]
 
       parsed match {
         case JsSuccess(TodoDataDto(title, description), _) => {
-          DB.localTx { implicit session =>
-            todoDao.save(Todo(id, title, description)) match {
-              case Failure(e: NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
-              case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
-              case Success(todo) => Ok(Json.toJson(todo))
-            }
+          DB.futureLocalTx { implicit session =>
+            todoDao.save(Todo(id, title, description))
+              .map { todo => Ok(Json.toJson(todo)) }
+              .recover {
+                case e: NoSuchElementException => NotFound(Json.obj("message" -> "Not found"))
+              }
           }
         }
-        case JsError(_) => BadRequest(Json.obj("message" -> "Invalid Json"))
+        case JsError(_) => Future.successful(BadRequest(Json.obj("message" -> "Invalid Json")))
       }
     }
 
@@ -116,13 +124,11 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents) exten
   @ApiResponses(Array(
     new ApiResponse(code = 404, message = "Not found", response = classOf[MessageDto])
   ))
-  def deleteTodo(@ApiParam(value = "削除対象のTodoのId") id: Long) = Action { implicit request =>
-    DB.localTx { implicit session =>
-      todoDao.delete(id) match {
-        case Failure(e: NoSuchElementException) => NotFound(Json.obj("message" -> "Not found"))
-        case Failure(_) => InternalServerError(Json.obj("message" -> "Some error occured"))
-        case Success(()) => Ok(Json.obj())
-      }
+  def deleteTodo(@ApiParam(value = "削除対象のTodoのId") id: Long) = Action.async { implicit request =>
+    DB.futureLocalTx { implicit session =>
+      todoDao.delete(id)
+        .map { _ => Ok(Json.obj()) }
+        .recover { case e: NoSuchElementException => NotFound(Json.obj("message" -> "Not found")) }
     }
   }
 
@@ -143,17 +149,18 @@ object TodoController {
 }
 
 case class MessageDto(message: String)
+
 case class TodoDataDto(title: String, description: String)
 
 @ImplementedBy(classOf[TodoDaoImpl])
 trait TodoDao {
-  def findAll()(implicit session: DBSession = autoSession): Seq[Todo]
+  def findAll()(implicit session: DBSession = autoSession): Future[Seq[Todo]]
 
-  def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession): Seq[Todo]
+  def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession): Future[Seq[Todo]]
 
-  def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo
+  def create(title: String, description: String)(implicit session: DBSession = autoSession): Future[Todo]
 
-  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]
+  def save(todo: Todo)(implicit session: DBSession = autoSession): Future[Todo]
 
-  def delete(id: Long)(implicit session: DBSession = autoSession): Try[Unit]
+  def delete(id: Long)(implicit session: DBSession = autoSession): Future[Unit]
 }

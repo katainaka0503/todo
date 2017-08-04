@@ -1,16 +1,19 @@
 package model
 
-import javax.inject.Singleton
+import javax.inject.{Inject, Singleton}
 
+import akka.actor.ActorSystem
 import controllers.TodoDao
 import model.Todo.autoSession
 import scalikejdbc._
 
+import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.util.{Failure, Success, Try}
 
 case class Todo(id: Long, title: String, description: String)
 
 object Todo extends SQLSyntaxSupport[Todo]{
+
   override def schemaName: Option[String] = Some("public")
 
   override val tableName = "todos"
@@ -27,70 +30,92 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
   override val autoSession = AutoSession
 
-  def findAll()(implicit session: DBSession = autoSession): Seq[Todo] = {
-    withSQL {
-      select.from(Todo as t)
-    }.map(Todo(t.resultName)).list.apply()
+  def findAll()(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
+    Future{
+      blocking {
+        withSQL {
+          select.from(Todo as t)
+        }.map(Todo(t.resultName)).list.apply()
+      }
+    }
+
   }
 
-  def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession): Seq[Todo] = {
+  def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
     val like = s"""%$keyword%"""   //Todo: Escape % and _ !!!
-    withSQL{
-      select.from(Todo as t)
-        .where.like(t.title, like)
-        .or.like(t.description, like)
-    }.map(Todo(t.resultName)).list.apply()
+    Future{
+      blocking {
+        withSQL{
+          select.from(Todo as t)
+            .where.like(t.title, like)
+            .or.like(t.description, like)
+        }.map(Todo(t.resultName)).list.apply()
+      }
+    }
+
   }
 
-  def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = {
-    val id = withSQL {
-      insertInto(Todo).namedValues(
-        column.title -> title,
-        column.description ->  description
-      )
-    }.updateAndReturnGeneratedKey.apply()
+  def create(title: String, description: String)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Todo] = {
+    Future {
+      blocking {
+        val id = withSQL {
+          insertInto(Todo).namedValues(
+            column.title -> title,
+            column.description -> description
+          )
+        }.updateAndReturnGeneratedKey.apply()
 
-    Todo(id, title, description)
-  }
-
-  def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo] = {
-    val num = withSQL {
-      update(Todo).set(
-        column.title -> todo.title,
-        column.description -> todo.description
-      ).where.eq(column.id, todo.id)
-    }.update.apply()
-
-    if(num == 0){
-      Failure(new NoSuchElementException())
-    } else {
-      Success(todo)
+        Todo(id, title, description)
+      }
     }
   }
 
-  def delete(id: Long)(implicit session: DBSession = autoSession): Try[Unit] = {
-    val num = withSQL {
-      deleteFrom(Todo).where.eq(column.id, id)
-    }.update.apply()
+  def save(todo: Todo)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Todo] = {
+    Future {
+      blocking {
+        val num = withSQL {
+          update(Todo).set(
+            column.title -> todo.title,
+            column.description -> todo.description
+          ).where.eq(column.id, todo.id)
+        }.update.apply()
 
-    if(num == 0){
-      Failure(new NoSuchElementException())
-    } else {
-      Success(())
+        if (num == 0) {
+          throw new NoSuchElementException()
+        } else {
+          todo
+        }
+      }
+    }
+  }
+
+  def delete(id: Long)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Unit] = {
+    Future {
+      blocking {
+        val num = withSQL {
+          deleteFrom(Todo).where.eq(column.id, id)
+        }.update.apply()
+
+        if (num == 0) {
+          throw new NoSuchElementException()
+        }
+      }
     }
   }
 }
 
 @Singleton
-class TodoDaoImpl extends TodoDao {
-  override def findAll()(implicit session: DBSession): Seq[Todo] = Todo.findAll()
+class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends TodoDao {
+  implicit val myExecutionContext: ExecutionContext = actorSystem.dispatchers.lookup("db-access-context")
 
-  override def findAllByKeyword(keyword: String)(implicit session: DBSession): Seq[Todo] = Todo.findAllByKeyword(keyword)
+  override def findAll()(implicit session: DBSession): Future[Seq[Todo]] = Todo.findAll()
 
-  override def create(title: String, description: String)(implicit session: DBSession = autoSession): Todo = Todo.create(title, description)
+  override def findAllByKeyword(keyword: String)(implicit session: DBSession): Future[Seq[Todo]] = Todo.findAllByKeyword(keyword)
 
-  override def save(todo: Todo)(implicit session: DBSession = autoSession): Try[Todo]  = Todo.save(todo)
+  override def create(title: String, description: String)(implicit session: DBSession = autoSession): Future[Todo] = Todo.create(title, description)
 
-  override def delete(id: Long)(implicit session: DBSession = autoSession): Try[Unit] = Todo.delete(id)
+  override def save(todo: Todo)(implicit session: DBSession = autoSession): Future[Todo]  = Todo.save(todo)
+
+  override def delete(id: Long)(implicit session: DBSession = autoSession): Future[Unit] = Todo.delete(id)
 
 }
