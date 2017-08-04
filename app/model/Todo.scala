@@ -8,7 +8,6 @@ import model.Todo.autoSession
 import scalikejdbc._
 
 import scala.concurrent.{ExecutionContext, Future, blocking}
-import scala.util.{Failure, Success, Try}
 
 case class Todo(id: Long, title: String, description: String)
 
