@@ -2,6 +2,7 @@ package model
 
 import java.util.NoSuchElementException
 
+import akka.actor.ActorSystem
 import org.scalatest.{Matchers, fixture}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
@@ -30,6 +31,8 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     }
   }
 
+  val todoDaoImpl = new TodoDaoImpl(ActorSystem.create("test"))
+
   behavior of "Todo"
 
   DBs.setupAll()
@@ -38,9 +41,9 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     await {
       Future.sequence {
         List(
-          Todo.create("Keyword%_Contains", "description"),
-          Todo.create("hogehoge", "contains%_Keyword"),
-          Todo.create("donotContains", "test"))
+          todoDaoImpl.create("Keyword%_Contains", "description"),
+          todoDaoImpl.create("hogehoge", "contains%_Keyword"),
+          todoDaoImpl.create("donotContains", "test"))
       }
 
     }
@@ -48,52 +51,52 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
 
   it should "search with Keyword" in { implicit session =>
     val keyword = "%_"
-    val all = await(Todo.findAll())
+    val all = await(todoDaoImpl.findAll())
     val expected = all.filter(todo => todo.title.contains(keyword) || todo.description.contains(keyword))
 
-    await(Todo.findAllByKeyword("%_")) should be(expected)
+    await(todoDaoImpl.findAllByKeyword("%_")) should be(expected)
   }
 
   it should "list all todos" in { implicit session =>
-    val all = await(Todo.findAll())
+    val all = await(todoDaoImpl.findAll())
     all.length should be(3)
   }
 
   it should "create todo" in { implicit session =>
-    await(Todo.create("newOne", "This is new Todo item."))
+    await(todoDaoImpl.create("newOne", "This is new Todo item."))
 
-    val all = await(Todo.findAll())
+    val all = await(todoDaoImpl.findAll())
 
     all.length should be(4)
   }
 
   it should "create todo with title 30 charcters" in { implicit session =>
-    val created = await(Todo.create("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ", "This is new Todo item."))
-    val found = await(Todo.findAllByKeyword("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ"))
+    val created = await(todoDaoImpl.create("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ", "This is new Todo item."))
+    val found = await(todoDaoImpl.findAllByKeyword("あいうえおかきくけこあいうえおかきくけこあいうえおかきくけこ"))
 
     Seq(created) should equal(found)
   }
 
   it should "update todo" in { implicit session =>
-    val created = await(Todo.create("newOne", "This is new Todo item."))
+    val created = await(todoDaoImpl.create("newOne", "This is new Todo item."))
     val modified = created.copy(title = "ModifiedOne")
 
-    await(Todo.save(modified)) should be(modified)
+    await(todoDaoImpl.save(modified)) should be(modified)
 
-    await(Todo.findAllByKeyword("Modified")).length should be(1)
+    await(todoDaoImpl.findAllByKeyword("Modified")).length should be(1)
   }
 
   it should "return error when update todo not exists" in { implicit session =>
-    awaitException(Todo.save(Todo(-1, "not Exist", "hoge"))) shouldBe a[NoSuchElementException]
+    awaitException(todoDaoImpl.save(Todo(-1, "not Exist", "hoge"))) shouldBe a[NoSuchElementException]
   }
 
   it should "delete todo" in { implicit session =>
-    val created = await(Todo.create("newOne", "This is new Todo item."))
+    val created = await(todoDaoImpl.create("newOne", "This is new Todo item."))
 
-    await(Todo.delete(created.id)) should be(())
+    await(todoDaoImpl.delete(created.id)) should be(())
   }
 
   it should "return error when delete todo not exists" in { implicit session =>
-    awaitException(Todo.delete(-1)) shouldBe a[NoSuchElementException]
+    awaitException(todoDaoImpl.delete(-1)) shouldBe a[NoSuchElementException]
   }
 }
