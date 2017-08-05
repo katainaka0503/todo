@@ -4,7 +4,6 @@ import javax.inject.{Inject, Singleton}
 
 import akka.actor.ActorSystem
 import controllers.TodoDao
-import model.Todo.autoSession
 import scalikejdbc._
 
 import scala.concurrent.{ExecutionContext, Future, blocking}
@@ -29,7 +28,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
   override val autoSession = AutoSession
 
-  def findAll()(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
+  def findAll()(implicit session: DBSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
     Future{
       blocking {
         withSQL {
@@ -40,7 +39,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
   }
 
-  def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
+  def findAllByKeyword(keyword: String)(implicit session: DBSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
     val escaped = keyword.replaceAll("%", """\\%""").replaceAll("_", """\\_""")
 
     val like = s"""%$escaped%"""
@@ -57,7 +56,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
 
   }
 
-  def create(title: String, description: String)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Todo] = {
+  def create(title: String, description: String)(implicit session: DBSession, executionContext: ExecutionContext): Future[Todo] = {
     Future {
       blocking {
         val id = withSQL {
@@ -72,7 +71,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
     }
   }
 
-  def save(todo: Todo)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Todo] = {
+  def save(todo: Todo)(implicit session: DBSession, executionContext: ExecutionContext): Future[Todo] = {
     Future {
       blocking {
         val num = withSQL {
@@ -91,7 +90,7 @@ object Todo extends SQLSyntaxSupport[Todo]{
     }
   }
 
-  def delete(id: Long)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Unit] = {
+  def delete(id: Long)(implicit session: DBSession, executionContext: ExecutionContext): Future[Unit] = {
     Future {
       blocking {
         val num = withSQL {
@@ -114,10 +113,10 @@ class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends TodoDao {
 
   override def findAllByKeyword(keyword: String)(implicit session: DBSession): Future[Seq[Todo]] = Todo.findAllByKeyword(keyword)
 
-  override def create(title: String, description: String)(implicit session: DBSession = autoSession): Future[Todo] = Todo.create(title, description)
+  override def create(title: String, description: String)(implicit session: DBSession): Future[Todo] = Todo.create(title, description)
 
-  override def save(todo: Todo)(implicit session: DBSession = autoSession): Future[Todo]  = Todo.save(todo)
+  override def save(todo: Todo)(implicit session: DBSession): Future[Todo]  = Todo.save(todo)
 
-  override def delete(id: Long)(implicit session: DBSession = autoSession): Future[Unit] = Todo.delete(id)
+  override def delete(id: Long)(implicit session: DBSession): Future[Unit] = Todo.delete(id)
 
 }
