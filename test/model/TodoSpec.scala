@@ -38,8 +38,8 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
     await {
       Future.sequence {
         List(
-          Todo.create("KeywordContains", "description"),
-          Todo.create("hogehoge", "containsKeyword"),
+          Todo.create("Keyword%_Contains", "description"),
+          Todo.create("hogehoge", "contains%_Keyword"),
           Todo.create("donotContains", "test"))
       }
 
@@ -47,11 +47,11 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
   }
 
   it should "search with Keyword" in { implicit session =>
-    val keyword = "Keyword"
+    val keyword = "%_"
     val all = await(Todo.findAll())
     val expected = all.filter(todo => todo.title.contains(keyword) || todo.description.contains(keyword))
 
-    await(Todo.findAllByKeyword("Keyword")) should be(expected)
+    await(Todo.findAllByKeyword("%_")) should be(expected)
   }
 
   it should "list all todos" in { implicit session =>
