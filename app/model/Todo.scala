@@ -41,7 +41,10 @@ object Todo extends SQLSyntaxSupport[Todo]{
   }
 
   def findAllByKeyword(keyword: String)(implicit session: DBSession = autoSession, executionContext: ExecutionContext): Future[Seq[Todo]] = {
-    val like = s"""%$keyword%"""   //Todo: Escape % and _ !!!
+    val escaped = keyword.replaceAll("%", """\\%""").replaceAll("_", """\\_""")
+
+    val like = s"""%$escaped%"""
+
     Future{
       blocking {
         withSQL{
