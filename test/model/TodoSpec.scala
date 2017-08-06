@@ -45,7 +45,6 @@ class TodoSpec extends fixture.FlatSpec with Matchers with AutoRollback with Gui
           todoDaoImpl.create("hogehoge", "contains%_Keyword"),
           todoDaoImpl.create("donotContains", "test"))
       }
-
     }
   }
 

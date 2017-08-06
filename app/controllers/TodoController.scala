@@ -118,7 +118,6 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
     todoDao.delete(id)
       .map { _ => Ok(Json.obj()) }
       .recover { case e: NoSuchElementException => NotFound(Json.obj("message" -> "Not found")) }
-
   }
 
 }

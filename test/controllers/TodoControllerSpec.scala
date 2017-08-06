@@ -25,9 +25,10 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
   val mockDao: TodoDao = mock[TodoDao]
 
   val controller = new TodoController(mockDao, stubCC)
+
   import TodoController.todoFormat
 
-  after{
+  after {
     reset(mockDao)
   }
 
@@ -37,7 +38,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.findAll().apply(FakeRequest())
 
-    status(result) should be (200)
+    status(result) should be(200)
     contentAsJson(result).as[List[Todo]] should be(todos)
   }
 
@@ -46,7 +47,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.findAll().apply(FakeRequest())
 
-    status(result) should be (200)
+    status(result) should be(200)
     contentAsJson(result).as[List[Todo]] should be(Seq.empty)
   }
 
@@ -57,7 +58,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.findAllByKeyword(keyword).apply(FakeRequest())
 
-    status(result) should be (200)
+    status(result) should be(200)
     contentAsJson(result).as[List[Todo]] should be(found)
   }
 
@@ -74,7 +75,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.newTodo().apply(FakeRequest().withBody(bodyJson))
 
-    status(result) should be (200)
+    status(result) should be(200)
     contentAsJson(result).as[Todo] should be(created)
   }
 
@@ -86,14 +87,14 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.newTodo().apply(FakeRequest().withBody(bodyJson))
 
-    status(result) should be (400)
+    status(result) should be(400)
     contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
 
   it should "return error when createTodo with empty Json" in {
     val result: Future[Result] = controller.newTodo().apply(FakeRequest().withBody(Json.obj()))
 
-    status(result) should be (400)
+    status(result) should be(400)
     contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
 
@@ -108,14 +109,14 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.updateTodo(modifing.id).apply(FakeRequest().withBody(bodyJson))
 
-    status(result) should be (200)
+    status(result) should be(200)
     contentAsJson(result).as[Todo] should be(modifing)
   }
 
   it should "return error when updateTodo with empty Json" in {
     val result: Future[Result] = controller.updateTodo(1).apply(FakeRequest().withBody(Json.obj()))
 
-    status(result) should be (400)
+    status(result) should be(400)
     contentAsJson(result) should be(Json.obj("message" -> "Invalid Json"))
   }
 
@@ -130,7 +131,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.updateTodo(modifing.id).apply(FakeRequest().withBody(bodyJson))
 
-    status(result) should be (404)
+    status(result) should be(404)
     contentAsJson(result) should be(Json.obj("message" -> "Not found"))
   }
 
@@ -140,7 +141,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.deleteTodo(id).apply(FakeRequest())
 
-    status(result) should be (200)
+    status(result) should be(200)
   }
 
   it should "return 404 when todo to delete not exists" in {
@@ -149,7 +150,7 @@ class TodoControllerSpec extends FlatSpec with BeforeAndAfter with Matchers with
 
     val result: Future[Result] = controller.deleteTodo(id).apply(FakeRequest())
 
-    status(result) should be (404)
+    status(result) should be(404)
     contentAsJson(result) should be(Json.obj("message" -> "Not found"))
   }
 

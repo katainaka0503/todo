@@ -9,7 +9,8 @@ import scalikejdbc._
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 @Singleton
-class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends SQLSyntaxSupport[Todo] with TodoDao{ Todos =>
+class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends SQLSyntaxSupport[Todo] with TodoDao {
+  Todos =>
 
   implicit def myExecutionContext: ExecutionContext = actorSystem.dispatchers.lookup("db-access-context")
 
@@ -20,6 +21,7 @@ class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends SQLSyntaxSupport[T
   override val columns = Seq("id", "title", "description")
 
   def apply(c: SyntaxProvider[Todo])(rs: WrappedResultSet): Todo = apply(c.resultName)(rs)
+
   def apply(c: ResultName[Todo])(rs: WrappedResultSet): Todo = new Todo(
     id = rs.get(c.id),
     title = rs.get(c.title),
@@ -30,7 +32,7 @@ class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends SQLSyntaxSupport[T
   override val autoSession = AutoSession
 
   def findAll()(implicit session: DBSession): Future[Seq[Todo]] = {
-    Future{
+    Future {
       blocking {
         withSQL {
           select.from(Todos as t)
@@ -45,16 +47,15 @@ class TodoDaoImpl @Inject()(actorSystem: ActorSystem) extends SQLSyntaxSupport[T
 
     val like = s"""%$escaped%"""
 
-    Future{
+    Future {
       blocking {
-        withSQL{
+        withSQL {
           select.from(Todos as t)
             .where.like(t.title, like)
             .or.like(t.description, like)
         }.map(Todos(t.resultName)).list.apply()
       }
     }
-
   }
 
   def create(title: String, description: String)(implicit session: DBSession): Future[Todo] = {
