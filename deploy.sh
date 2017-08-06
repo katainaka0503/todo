@@ -44,6 +44,8 @@ make_task_def(){
 			"name": "todo-server",
 			"image": "%s.dkr.ecr.ap-northeast-1.amazonaws.com/todo-server:%s",
 			"essential": true,
+			"memory": 1000,
+			"cpu": 10,
 			"portMappings": [
 				{
 					"containerPort": 9000,
