@@ -26,7 +26,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
   @ApiOperation(
     value = "TodoのAPI",
     produces = "application/json",
-    response = classOf[Seq[Todo]]
+    response = classOf[Array[Todo]]
   )
   def findAll() = Action.async { implicit request =>
     for {
@@ -39,7 +39,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
     httpMethod = "GET",
     value = "Todoをキーワードで検索",
     produces = "application/json",
-    response = classOf[Seq[Todo]]
+    response = classOf[Array[Todo]]
   )
   def findAllByKeyword(@ApiParam(value = "検索対象のTodoが含むキーワード") keyword: String) =
     Action.async { implicit request =>
