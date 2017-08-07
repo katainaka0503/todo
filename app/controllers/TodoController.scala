@@ -24,7 +24,7 @@ class TodoController @Inject()(todoDao: TodoDao, cc: ControllerComponents)(impli
   import TodoController.{todoFormat, createDtoFormmat}
 
   @ApiOperation(
-    value = "TodoのAPI",
+    value = "すべてのTodoを取得",
     produces = "application/json",
     response = classOf[Array[Todo]]
   )
